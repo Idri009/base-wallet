@@ -1,6 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
-import { borderRadius, colors, commonStyles, spacing, typography } from '@/utils/theme';
+import {
+  borderRadius,
+  colors,
+  commonStyles,
+  spacing,
+  typography,
+} from '@/utils/theme';
 import { BlurView } from 'expo-blur';
 import { ArrowUpRight, TrendingUp } from 'lucide-react-native';
 
@@ -33,20 +39,56 @@ export function TokenCard({ token, onPress }: TokenCardProps) {
           <View style={styles.iconContainer}>
             <Image source={{ uri: token.iconUrl }} style={styles.icon} />
           </View>
-          
+
           <View style={styles.details}>
             <View style={commonStyles.rowBetween}>
               <Text style={styles.symbol}>{token.symbol}</Text>
-              <Text style={styles.balance}>{token.balance}</Text>
-            </View>
-            
-            <View style={commonStyles.rowBetween}>
-              <Text style={styles.name}>{token.name}</Text>
+              {/* <Text style={styles.balance}>{token.balance}</Text> */}
               <Text style={styles.balanceUsd}>${token.balanceUsd}</Text>
             </View>
+
+            <View style={commonStyles.rowBetween}>
+              <Text style={styles.name}>{token.name}</Text>
+              {/* <Text style={styles.balanceUsd}>${token.balanceUsd}</Text> */}
+              <View style={styles.priceChangeContainer}>
+                <View
+                  style={[
+                    styles.priceChange,
+                    // {
+                    //   backgroundColor: isPriceUp
+                    //     ? colors.status.success + '20'
+                    //     : colors.status.error + '20',
+                    // },
+                  ]}
+                >
+                  <TrendingUp
+                    size={14}
+                    color={
+                      isPriceUp ? colors.status.success : colors.status.error
+                    }
+                    style={{
+                      transform: [{ rotate: isPriceUp ? '0deg' : '180deg' }],
+                    }}
+                  />
+                  <Text
+                    style={[
+                      styles.priceChangeText,
+                      {
+                        color: isPriceUp
+                          ? colors.status.success
+                          : colors.status.error,
+                      },
+                    ]}
+                  >
+                    {Math.abs(token.priceChange).toFixed(2)}%
+                  </Text>
+                </View>
+                {/* <ArrowUpRight size={16} color={colors.text.hint} style={styles.detailIcon} /> */}
+              </View>
+            </View>
           </View>
-          
-          <View style={styles.priceChangeContainer}>
+
+          {/* <View style={styles.priceChangeContainer}>
             <View style={[
               styles.priceChange,
               { backgroundColor: isPriceUp ? colors.status.success + '20' : colors.status.error + '20' }
@@ -64,7 +106,7 @@ export function TokenCard({ token, onPress }: TokenCardProps) {
               </Text>
             </View>
             <ArrowUpRight size={16} color={colors.text.hint} style={styles.detailIcon} />
-          </View>
+          </View> */}
         </View>
       </BlurView>
     </Pressable>
@@ -86,7 +128,8 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
+    paddingHorizontal: 10,
+    paddingVertical: 15,
   },
   iconContainer: {
     width: 42,
@@ -124,14 +167,15 @@ const styles = StyleSheet.create({
   priceChangeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    
   },
   priceChange: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    // paddingHorizontal: spacing.sm,
+    // paddingVertical: 4,
+    marginTop: 3,
     borderRadius: borderRadius.round,
-    marginRight: spacing.sm,
   },
   priceChangeText: {
     ...typography.caption,
@@ -140,5 +184,5 @@ const styles = StyleSheet.create({
   },
   detailIcon: {
     opacity: 0.6,
-  }
+  },
 });

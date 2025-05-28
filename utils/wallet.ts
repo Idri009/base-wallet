@@ -1,16 +1,22 @@
-// This is a mock implementation for UI purposes
-// In a real application, this would integrate with actual blockchain libraries
+import { Wallet, Mnemonic, JsonRpcProvider, formatEther, parseEther } from 'ethers';
+import { Buffer } from 'buffer';
+import * as SecureStore from 'expo-secure-store';
+import { getRandomBytes } from 'expo-crypto';
 
-// Mock wallet data
-export interface Wallet {
-  address: string;
-  balance: string;
-  balanceUsd: string;
-  privateKey?: string;
-  mnemonic?: string;
-  tokens: TokenBalance[];
-  transactions: Transaction[];
-}
+
+// Base chain configuration
+const BASE_CHAIN = {
+  mainnet: {
+    chainId: 8453,
+    rpcUrl: 'https://mainnet.base.org',
+    explorerUrl: 'https://basescan.org',
+  },
+  testnet: {
+    chainId: 84531,
+    rpcUrl: 'https://goerli.base.org',
+    explorerUrl: 'https://goerli.basescan.org',
+  }
+};
 
 export interface TokenBalance {
   id: string;
@@ -39,243 +45,172 @@ export interface Transaction {
   fee: string;
 }
 
-// Mock wallet creation function
-export const createWallet = (): Wallet => {
-  return {
-    address: '0x' + generateRandomHex(40),
-    balance: '0.00',
-    balanceUsd: '0.00',
-    privateKey: '0x' + generateRandomHex(64),
-    mnemonic: generateMockMnemonic(),
-    tokens: [],
-    transactions: [],
-  };
+const customRandomBytes = (length: any) => {
+  return getRandomBytes(length);
 };
 
-// Mock import wallet function
-export const importWalletFromMnemonic = (mnemonic: string): Wallet => {
-  return {
-    address: '0x' + generateRandomHex(40),
-    balance: '1.45',
-    balanceUsd: '4,371.22',
-    mnemonic,
-    tokens: getMockTokens(),
-    transactions: getMockTransactions(),
-  };
-};
-
-export const importWalletFromPrivateKey = (privateKey: string): Wallet => {
-  return {
-    address: '0x' + generateRandomHex(40),
-    balance: '1.45',
-    balanceUsd: '4,371.22',
-    privateKey,
-    tokens: getMockTokens(),
-    transactions: getMockTransactions(),
-  };
-};
-
-// Helper functions
-const generateRandomHex = (length: number): string => {
-  const characters = '0123456789abcdef';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
+export const createWallet = async () => {
+  try {
+    // Create entropy using expo-crypto
+    const entropy = customRandomBytes(16); // 16 bytes = 128 bits
+    
+    // Convert entropy to bip39 mnemonic
+    const mnemonic = Mnemonic.fromEntropy(entropy).phrase;
+    
+    // Create wallet from mnemonic
+    const wallet = Wallet.fromPhrase(mnemonic);
+    
+    return {
+      address: wallet.address,
+      privateKey: wallet.privateKey,
+      mnemonic: mnemonic,
+    };
+  } catch (error) {
+    console.error('Error creating wallet:', error);
+    throw new Error('Failed to generate wallet: ');
   }
-  return result;
 };
 
-const generateMockMnemonic = (): string => {
-  const words = [
-    'abandon', 'ability', 'able', 'about', 'above', 'absent',
-    'absorb', 'abstract', 'absurd', 'abuse', 'access', 'accident',
-    'account', 'accuse', 'achieve', 'acid', 'acoustic', 'acquire'
-  ];
-  
-  let mnemonic = '';
-  for (let i = 0; i < 12; i++) {
-    mnemonic += words[Math.floor(Math.random() * words.length)];
-    if (i < 11) mnemonic += ' ';
+
+
+export const createWalletFromKey = () => {
+  try {
+    // Create a random private key using expo-crypto
+    const privateKeyBytes = customRandomBytes(32); // 32 bytes = 256 bits
+    const privateKey = '0x' + Buffer.from(privateKeyBytes).toString('hex');
+    
+    // Create wallet from private key
+    const wallet = new Wallet(privateKey);
+    
+    return {
+      address: wallet.address,
+      privateKey: wallet.privateKey,
+      mnemonic: null, // No mnemonic when creating from private key
+    };
+  } catch (error) {
+    console.error('Error creating wallet from key:', error);
+    throw new Error('Failed to generate wallet: ' + error);
   }
-  
-  return mnemonic;
 };
 
-// Mock data functions
-export const getMockTokens = (): TokenBalance[] => {
-  return [
-    {
-      id: '1',
-      name: 'Ethereum',
-      symbol: 'ETH',
-      balance: '1.45',
-      balanceUsd: '4,371.22',
-      priceUsd: '3,014.64',
-      priceChange: 2.34,
-      contractAddress: '',
-      decimals: 18,
-      iconUrl: 'https://cryptologos.cc/logos/ethereum-eth-logo.png'
-    },
-    {
-      id: '2',
-      name: 'USD Coin',
-      symbol: 'USDC',
-      balance: '530.82',
-      balanceUsd: '530.82',
-      priceUsd: '1.00',
-      priceChange: 0.01,
-      contractAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-      decimals: 6,
-      iconUrl: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png'
-    },
-    {
-      id: '3',
-      name: 'Chainlink',
-      symbol: 'LINK',
-      balance: '25.75',
-      balanceUsd: '325.23',
-      priceUsd: '12.63',
-      priceChange: -1.45,
-      contractAddress: '0x514910771af9ca656af840dff83e8264ecf986ca',
-      decimals: 18,
-      iconUrl: 'https://cryptologos.cc/logos/chainlink-link-logo.png'
-    },
-    {
-      id: '4',
-      name: 'Aave',
-      symbol: 'AAVE',
-      balance: '2.14',
-      balanceUsd: '178.21',
-      priceUsd: '83.28',
-      priceChange: 4.67,
-      contractAddress: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9',
-      decimals: 18,
-      iconUrl: 'https://cryptologos.cc/logos/aave-aave-logo.png'
+export const storeWallet = async (walletData : any, biometricsEnabled = false) => {
+  try {
+    // Encrypt sensitive wallet data before storing
+    const walletJson = JSON.stringify({
+      address: walletData.address,
+      privateKey: walletData.privateKey,
+      mnemonic: walletData.mnemonic,
+    });
+    
+    // Store wallet data
+    await SecureStore.setItemAsync('wallet_data', walletJson);
+    
+    // Store flag indicating wallet creation
+    await SecureStore.setItemAsync('wallet_created', 'true');
+    
+    return true;
+  } catch (error) {
+    console.error('Error storing wallet:', error);
+    throw new Error('Failed to securely store wallet');
+  }
+};
+
+export const retrieveWallet = async () => {
+  try {
+    const walletJson = await SecureStore.getItemAsync('wallet_data');
+
+    if (!walletJson) {
+      return null;
     }
-  ];
+
+    return JSON.parse(walletJson);
+  } catch (error) {
+    console.error('Error retrieving wallet:', error);
+    throw new Error('Failed to retrieve wallet');
+  }
 };
 
-export const getMockTransactions = (): Transaction[] => {
-  return [
-    {
-      id: '1',
-      type: 'receive',
-      status: 'confirmed',
-      amount: '0.5',
-      token: 'ETH',
-      tokenSymbol: 'ETH',
-      timestamp: Date.now() - 3600000, // 1 hour ago
-      hash: '0x' + generateRandomHex(64),
-      to: '0x' + generateRandomHex(40),
-      from: '0x' + generateRandomHex(40),
-      fee: '0.002'
-    },
-    {
-      id: '2',
-      type: 'send',
-      status: 'confirmed',
-      amount: '100',
-      token: 'USDC',
-      tokenSymbol: 'USDC',
-      timestamp: Date.now() - 86400000, // 1 day ago
-      hash: '0x' + generateRandomHex(64),
-      to: '0x' + generateRandomHex(40),
-      from: '0x' + generateRandomHex(40),
-      fee: '0.001'
-    },
-    {
-      id: '3',
-      type: 'swap',
-      status: 'confirmed',
-      amount: '0.2',
-      token: 'ETH-LINK',
-      tokenSymbol: 'ETH → LINK',
-      timestamp: Date.now() - 172800000, // 2 days ago
-      hash: '0x' + generateRandomHex(64),
-      to: '0x' + generateRandomHex(40),
-      from: '0x' + generateRandomHex(40),
-      fee: '0.0015'
-    },
-    {
-      id: '4',
-      type: 'approve',
-      status: 'confirmed',
-      amount: '0',
-      token: 'AAVE',
-      tokenSymbol: 'AAVE',
-      timestamp: Date.now() - 259200000, // 3 days ago
-      hash: '0x' + generateRandomHex(64),
-      to: '0x' + generateRandomHex(40),
-      from: '0x' + generateRandomHex(40),
-      fee: '0.001'
-    },
-    {
-      id: '5',
-      type: 'send',
-      status: 'pending',
-      amount: '0.1',
-      token: 'ETH',
-      tokenSymbol: 'ETH',
-      timestamp: Date.now() - 1800000, // 30 minutes ago
-      hash: '0x' + generateRandomHex(64),
-      to: '0x' + generateRandomHex(40),
-      from: '0x' + generateRandomHex(40),
-      fee: '0.002'
-    }
-  ];
+export const walletExists = async () => {
+  try {
+    const exists = await SecureStore.getItemAsync('wallet_created');
+    return exists === 'true';
+  } catch (error) {
+    return false;
+  }
 };
 
-// Mock transaction functions
-export const sendToken = (
-  amount: string,
-  tokenSymbol: string,
-  toAddress: string
-): Promise<Transaction> => {
-  return new Promise((resolve) => {
-    // Simulate network delay
-    setTimeout(() => {
-      const transaction: Transaction = {
-        id: Date.now().toString(),
-        type: 'send',
-        status: 'pending',
-        amount,
-        token: tokenSymbol,
-        tokenSymbol,
-        timestamp: Date.now(),
-        hash: '0x' + generateRandomHex(64),
-        to: toAddress,
-        from: '0x' + generateRandomHex(40),
-        fee: '0.002'
-      };
-      
-      resolve(transaction);
-    }, 1500);
-  });
+export const importFromPrivateKey = (privateKey: string) => {
+  try {
+    const wallet = new Wallet(privateKey);
+    return {
+      address: wallet.address,
+      privateKey: wallet.privateKey,
+      mnemonic: null, // Private key imports don't have mnemonics
+    };
+  } catch (error) {
+    throw new Error('Invalid private key');
+  }
 };
 
-export const swapTokens = (
-  fromAmount: string,
-  fromToken: string,
-  toToken: string
-): Promise<Transaction> => {
-  return new Promise((resolve) => {
-    // Simulate network delay
-    setTimeout(() => {
-      const transaction: Transaction = {
-        id: Date.now().toString(),
-        type: 'swap',
-        status: 'pending',
-        amount: fromAmount,
-        token: `${fromToken}-${toToken}`,
-        tokenSymbol: `${fromToken} → ${toToken}`,
-        timestamp: Date.now(),
-        hash: '0x' + generateRandomHex(64),
-        to: '0x' + generateRandomHex(40),
-        from: '0x' + generateRandomHex(40),
-        fee: '0.0025'
-      };
-      
-      resolve(transaction);
-    }, 2000);
-  });
+export const importFromMnemonic = (mnemonic: string) => {
+  try {
+    const wallet = Wallet.fromPhrase(mnemonic);
+    return {
+      address: wallet.address,
+      privateKey: wallet.privateKey,
+      mnemonic: wallet.mnemonic?.phrase,
+    };
+  } catch (error) {
+    throw new Error('Invalid mnemonic phrase');
+  }
+};
+
+
+// Get wallet balance
+export const getWalletBalance = async (address: string, isTestnet = false) => {
+  try {
+    const network = isTestnet ? BASE_CHAIN.testnet : BASE_CHAIN.mainnet;
+    const provider = new JsonRpcProvider(network.rpcUrl);
+    const balance = await provider.getBalance(address);
+    return formatEther(balance); // Convert to ETH
+  } catch (error) {
+    console.error('Error getting balance:', error);
+    throw new Error('Failed to fetch wallet balance');
+  }
+};
+
+export const sendTransaction = async (
+  privateKey: string, 
+  toAddress : string, 
+  amount : string, 
+  isTestnet = false
+) => {
+  try {
+    const network = isTestnet ? BASE_CHAIN.testnet : BASE_CHAIN.mainnet;
+    const provider = new JsonRpcProvider(network.rpcUrl);
+    
+    // Create wallet instance with provider
+    const wallet = new Wallet(privateKey, provider);
+    
+    // Convert ETH amount to wei
+    const amountWei = parseEther(amount.toString());
+    
+    // Create transaction object
+    const tx = {
+      to: toAddress,
+      value: amountWei,
+    };
+    
+    // Send transaction
+    const transaction = await wallet.sendTransaction(tx);
+    
+    // Return the transaction hash
+    return {
+      hash: transaction.hash,
+      explorerUrl: `${network.explorerUrl}/tx/${transaction.hash}`,
+    };
+  } catch (error) {
+    console.error('Error sending transaction:', error);
+    throw new Error('Failed to send transaction');
+  }
 };

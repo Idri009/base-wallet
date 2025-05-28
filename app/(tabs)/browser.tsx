@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, commonStyles, spacing, typography, borderRadius } from '@/utils/theme';
 import { ArrowLeft, Bookmark, Globe, History, Search, Star } from 'lucide-react-native';
+import { WebView } from 'react-native-webview';
+import { useNavigation } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+
 
 interface DappItem {
   name: string;
@@ -39,14 +43,41 @@ const popularDapps: DappItem[] = [
 ];
 
 export default function BrowserScreen() {
+  const navigation = useNavigation()
   const [url, setUrl] = useState('');
   const [activeTab, setActiveTab] = useState<'popular' | 'recent' | 'bookmarks'>('popular');
+  const [webViewUrl, setWebViewUrl] = useState<string | null>(null);
+
+  const webViewRef = useRef<WebView>(null);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: { display: webViewUrl ? 'none' : 'flex' },
+    });
+    // navigation.setOptions
+  }, [webViewUrl, navigation]);
+
+  const handleUrlSubmit = () => {
+    if (url.trim()) {
+      let formattedUrl = url.trim();
+      if (!/^https?:\/\//i.test(formattedUrl)) {
+        formattedUrl = 'https://' + formattedUrl;
+      }
+      setWebViewUrl(formattedUrl);
+    }
+  };
+
+  const handleDappPress = (dapp: DappItem) => {
+    setWebViewUrl(dapp.url);
+  };
+
 
   const renderDappItem = (dapp: DappItem) => (
     <TouchableOpacity 
       key={dapp.name}
       style={styles.dappItem}
       activeOpacity={0.7}
+      onPress={() => handleDappPress(dapp)}
     >
       <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
       <View style={styles.dappIcon}>
@@ -61,6 +92,31 @@ export default function BrowserScreen() {
       </TouchableOpacity>
     </TouchableOpacity>
   );
+
+
+  if (webViewUrl) {
+    return (
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <StatusBar style='dark' backgroundColor={colors.background.light}/>
+        <View style={styles.webviewHeader}>
+          <TouchableOpacity onPress={() => setWebViewUrl(null)} style={styles.backButton}>
+            <ArrowLeft size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.webviewTitle} numberOfLines={1}>
+            {webViewUrl}
+          </Text>
+        </View>
+        <WebView 
+          ref={webViewRef}
+          source={{ uri: webViewUrl }}
+          style={{ flex: 1 }}
+          startInLoadingState
+          
+        />
+      </SafeAreaView>
+    );
+  }
+
 
   return (
     <SafeAreaView style={commonStyles.safeArea} edges={['top']}>
@@ -77,12 +133,13 @@ export default function BrowserScreen() {
             placeholderTextColor={colors.text.hint}
             value={url}
             onChangeText={setUrl}
+            onSubmitEditing={handleUrlSubmit}
             autoCapitalize="none"
             autoCorrect={false}
           />
         </View>
 
-        <View style={styles.tabsContainer}>
+        {/* <View style={styles.tabsContainer}>
           <TouchableOpacity 
             style={[styles.tab, activeTab === 'popular' && styles.activeTab]}
             onPress={() => setActiveTab('popular')}
@@ -106,7 +163,7 @@ export default function BrowserScreen() {
             <Bookmark size={16} color={activeTab === 'bookmarks' ? colors.primary.default : colors.text.secondary} />
             <Text style={[styles.tabText, activeTab === 'bookmarks' && styles.activeTabText]}>Bookmarks</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         <ScrollView 
           style={styles.content}
@@ -250,5 +307,22 @@ const styles = StyleSheet.create({
     height: 150,
     borderBottomLeftRadius: 150,
     opacity: 0.2,
+  },
+  webviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.background.light,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.ui.border,
+  },
+  backButton: {
+    marginRight: spacing.md,
+  },
+  webviewTitle: {
+    ...typography.bodySmall,
+    color: colors.text.primary,
+    flex: 1,
   },
 });

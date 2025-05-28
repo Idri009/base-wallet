@@ -71,7 +71,7 @@ export default function HistoryScreen() {
         </View>
       </View>
       
-      <ChevronRight size={16} color={colors.text.hint} />
+      {/* <ChevronRight size={16} color={colors.text.hint} /> */}
     </TouchableOpacity>
   );
 

@@ -270,7 +270,7 @@ export default function SwapScreen() {
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             />
-            <Animated.View style={rotateStyle}>
+            <Animated.View  style={[rotateStyle]}>
               <ArrowDownUp size={20} color={colors.primary.default} />
             </Animated.View>
           </TouchableOpacity>
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginVertical: -20,
+    // marginVertical: 0,
     zIndex: 10,
     overflow: 'hidden',
   },

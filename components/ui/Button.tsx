@@ -195,6 +195,9 @@ function getTextStyles(variant: ButtonVariant, size: ButtonSize): TextStyle {
 const styles = StyleSheet.create({
   button: {
     overflow: 'hidden',
+    alignContent: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row'
   },
   gradient: {
     flexDirection: 'row',
